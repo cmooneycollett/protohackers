@@ -3,25 +3,31 @@ use std::thread;
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
+/// Simple thread pool implementation using job queue.
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: Option<mpsc::Sender<Job>>
+    sender: Option<mpsc::Sender<Job>>,
 }
 
 impl ThreadPool {
+    /// Creates a new thread pool with the given number of workers.
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
         // Create mpsc channel
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
-
+        // Create the workers
         let mut workers = Vec::with_capacity(size);
-        for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        for _ in 0..size {
+            workers.push(Worker::new(Arc::clone(&receiver)));
         }
-        ThreadPool { workers, sender: Some(sender) }
+        ThreadPool {
+            workers,
+            sender: Some(sender),
+        }
     }
 
+    /// Sends the closure for execution by the thread pool.
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
@@ -35,7 +41,6 @@ impl Drop for ThreadPool {
     fn drop(&mut self) {
         drop(self.sender.take());
         for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
             if let Some(threat) = worker.thread.take() {
                 threat.join().unwrap();
             }
@@ -43,26 +48,23 @@ impl Drop for ThreadPool {
     }
 }
 
+/// Represents a single worker thread in the thread pool.
 struct Worker {
-    id: usize,
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+    /// Creates a new worker that checks for jobs from the given receiver channel half.
+    fn new(receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv();
             match message {
-                Ok(job) => {
-                    println!("Worker {id} for a job; executing.");
-                    job();
-                }
-                Err(_) => {
-                    println!("Worker {id} disconnected; shutting down.");
-                    break;
-                }
+                Ok(job) => job(),
+                Err(_) => break,
             }
         });
-        Worker{ id, thread: Some(thread) }
+        Worker {
+            thread: Some(thread),
+        }
     }
 }

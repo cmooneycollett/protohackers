@@ -12,20 +12,24 @@ const NUM_WORKERS: usize = 10;
 
 /// Entry point function for Protohackers problem 0.
 pub fn main() {
-    // Preamble
-    println!("Protohackers // Problem {} - \"{}\"", PROBLEM_NUMBER, PROBLEM_NAME);
+    println!(
+        "Protohackers // Problem {} - \"{}\"",
+        PROBLEM_NUMBER, PROBLEM_NAME
+    );
     println!("==================================================");
-    // Solution
+    // Bind TCP listener to accept incoming connections
     let addr = format!("{}:{}", IP_ADDR, PORT_TCP);
     let listener = TcpListener::bind(addr).unwrap();
+    println!("[+] Listening on: {}:{} ...", IP_ADDR, PORT_TCP);
+    // Create thread pool and handle incoming connections
     let threadpool = ThreadPool::new(NUM_WORKERS);
-    for stream in listener.incoming() {
-        if let Ok(stream) = stream {
-            threadpool.execute(|| handle_connection(stream));
-        }
+    for stream in listener.incoming().flatten() {
+        println!("[+] Incoming connection from: {}", stream.peer_addr().unwrap());
+        threadpool.execute(|| handle_connection(stream));
     }
 }
 
+/// Reads all bytes from the stream until EOF is reached, then writes the same bytes to the stream.
 fn handle_connection(mut stream: TcpStream) {
     // Read from stream
     let mut buf_reader = BufReader::new(&mut stream);
@@ -36,11 +40,7 @@ fn handle_connection(mut stream: TcpStream) {
             return;
         }
     }
-    // Write to stream
-    println!("sending data back to sender");
+    // Write to stream - ignore error
     let mut buf_writer = BufWriter::new(&mut stream);
-    match buf_writer.write_all(&buf) {
-        Ok(_) => (),
-        Err(_) => (),
-    }
+    if buf_writer.write_all(&buf).is_ok() {}
 }
