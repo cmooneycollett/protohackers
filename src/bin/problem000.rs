@@ -24,7 +24,10 @@ pub fn main() {
     // Create thread pool and handle incoming connections
     let threadpool = ThreadPool::new(NUM_WORKERS);
     for stream in listener.incoming().flatten() {
-        println!("[+] Incoming connection from: {}", stream.peer_addr().unwrap());
+        println!(
+            "[+] Incoming connection from: {}",
+            stream.peer_addr().unwrap()
+        );
         threadpool.execute(|| handle_connection(stream));
     }
 }
