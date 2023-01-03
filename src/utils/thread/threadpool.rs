@@ -1,6 +1,7 @@
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
+/// Heap-allocated closure for execution by worker thread.
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 /// Simple thread pool implementation using job queue.
@@ -43,8 +44,8 @@ impl Drop for ThreadPool {
         drop(self.sender.take());
         // Wait for each worker thread to finish and tidy-up
         for worker in &mut self.workers {
-            if let Some(threat) = worker.thread.take() {
-                threat.join().unwrap();
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
             }
         }
     }
