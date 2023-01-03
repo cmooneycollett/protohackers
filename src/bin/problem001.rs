@@ -1,6 +1,8 @@
 use std::io::{prelude::*, BufReader, BufWriter};
 use std::net::{TcpListener, TcpStream};
+use std::str::FromStr;
 
+use num_bigint::{BigInt, ToBigInt};
 use serde_json::{map::Entry, Value};
 
 use protohackers::utils::thread::ThreadPool;
@@ -66,7 +68,7 @@ fn handle_connection(stream: TcpStream) {
         }
         // Process data
         if let Some(n) = extract_number(&buf) {
-            let result = is_prime(n);
+            let result = is_prime(&n);
             send_conforming_response(&mut buf_writer, result);
         } else {
             send_malformed_response(&mut buf_writer);
@@ -77,7 +79,7 @@ fn handle_connection(stream: TcpStream) {
 
 /// Extracts the number from the request sent from the client. Returns None if the request is
 /// malformed JSON, request fields are missing or required fields contain invalid values.
-fn extract_number(buf: &String) -> Option<i64> {
+fn extract_number(buf: &String) -> Option<BigInt> {
     if let Ok(v) = serde_json::from_str::<Value>(&buf) {
         match v {
             Value::Object(mut map) => {
@@ -92,12 +94,15 @@ fn extract_number(buf: &String) -> Option<i64> {
                 }
                 // Check that request contains "number" field with valid value
                 if let Entry::Occupied(e) = map.entry("number") {
-                    let val = e.get();
-                    if !val.is_i64() {
+                    let val = e.get().to_string();
+                    if val.contains('.') {
+                        return Some(0.to_bigint().unwrap());
+                    }
+                    if let Ok(n) = BigInt::from_str(&val.to_string()) {
+                        return Some(n);
+                    } else {
                         return None;
                     }
-                    let val = val.as_i64().unwrap();
-                    return Some(val);
                 } else {
                     return None;
                 }
@@ -111,15 +116,22 @@ fn extract_number(buf: &String) -> Option<i64> {
 }
 
 /// Checks if "n" is a prime number.
-fn is_prime(n: i64) -> bool {
-    if n <= 1 {
+fn is_prime(n: &BigInt) -> bool {
+    // let mut n = n.clone();
+    if *n <= 1.to_bigint().unwrap() {
         return false;
+    } else if *n <= 3.to_bigint().unwrap() {
+        return true;
     }
-    let upper = (n as f64).sqrt() as i64 + 1;
-    for i in 3..=upper {
-        if n % i == 0 {
+    let mut i = 2.to_bigint().unwrap();
+    let upper = &(n.sqrt() + 1.to_bigint().unwrap());
+    while i <= *upper {
+        let n1 = n.clone();
+        let i1 = i.clone();
+        if n1 % i1 == 0.to_bigint().unwrap() {
             return false;
         }
+        i += 1.to_bigint().unwrap();
     }
     true
 }

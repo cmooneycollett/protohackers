@@ -7,4 +7,6 @@ authors = ["Connor Mooney-Collett <connor.mooneycollett@gmail.com>"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.91"
+num-bigint = { version = "0.4.3", features = ["serde"] }
+num-traits = "0.2.15"
+serde_json = { version = "1.0.91", features = ["arbitrary_precision"] }
