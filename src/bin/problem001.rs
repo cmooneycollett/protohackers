@@ -77,7 +77,7 @@ fn handle_connection(stream: TcpStream) {
 
 /// Extracts the number from the request sent from the client. Returns None if the request is
 /// malformed JSON, request fields are missing or required fields contain invalid values.
-fn extract_number(buf: &String) -> Option<u64> {
+fn extract_number(buf: &String) -> Option<i64> {
     if let Ok(v) = serde_json::from_str::<Value>(&buf) {
         match v {
             Value::Object(mut map) => {
@@ -93,10 +93,10 @@ fn extract_number(buf: &String) -> Option<u64> {
                 // Check that request contains "number" field with valid value
                 if let Entry::Occupied(e) = map.entry("number") {
                     let val = e.get();
-                    if !val.is_u64() {
+                    if !val.is_i64() {
                         return None;
                     }
-                    let val = val.as_u64().unwrap();
+                    let val = val.as_i64().unwrap();
                     return Some(val);
                 } else {
                     return None;
@@ -111,12 +111,12 @@ fn extract_number(buf: &String) -> Option<u64> {
 }
 
 /// Checks if "n" is a prime number.
-fn is_prime(n: u64) -> bool {
-    if n <= 2 {
-        return true;
+fn is_prime(n: i64) -> bool {
+    if n <= 1 {
+        return false;
     }
-    let upper = (n as f64).sqrt() as u64 + 1;
-    for i in 2..=upper {
+    let upper = (n as f64).sqrt() as i64 + 1;
+    for i in 3..=upper {
         if n % i == 0 {
             return false;
         }
