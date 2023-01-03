@@ -36,7 +36,8 @@ pub fn main() {
     }
 }
 
-/// Handle connection from client // ###
+/// Handle connection from client // Processes JSON requests from the clients and responds based
+/// on the method requested.
 fn handle_connection(stream: TcpStream) {
     // Create the bufreader
     let mut buf_reader = {
@@ -79,14 +80,14 @@ fn handle_connection(stream: TcpStream) {
 
 /// Extracts the number from the request sent from the client. Returns None if the request is
 /// malformed JSON, request fields are missing or required fields contain invalid values.
-fn extract_number(buf: &String) -> Option<BigInt> {
-    if let Ok(v) = serde_json::from_str::<Value>(&buf) {
+fn extract_number(buf: &str) -> Option<BigInt> {
+    if let Ok(v) = serde_json::from_str::<Value>(buf) {
         match v {
             Value::Object(mut map) => {
                 // Check that request contains "method" field with valid value
                 if let Entry::Occupied(e) = map.entry("method") {
                     let val = e.get();
-                    if !val.is_string() || (val.is_string() && val.to_string() != "\"isPrime\"") {
+                    if !val.is_string() || (val.is_string() && val.as_str().unwrap() != "isPrime") {
                         return None;
                     }
                 } else {
@@ -95,10 +96,11 @@ fn extract_number(buf: &String) -> Option<BigInt> {
                 // Check that request contains "number" field with valid value
                 if let Entry::Occupied(e) = map.entry("number") {
                     let val = e.get().to_string();
+                    // Replace any floats with a non-prime number
                     if val.contains('.') {
                         return Some(0.to_bigint().unwrap());
                     }
-                    if let Ok(n) = BigInt::from_str(&val.to_string()) {
+                    if let Ok(n) = BigInt::from_str(&val) {
                         return Some(n);
                     } else {
                         return None;
