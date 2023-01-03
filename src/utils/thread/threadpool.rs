@@ -13,7 +13,10 @@ pub struct ThreadPool {
 impl ThreadPool {
     /// Creates a new thread pool with the given number of workers.
     pub fn new(size: usize) -> ThreadPool {
-        assert!(size > 0, "Thread pool must have a non-zero number of workers!");
+        assert!(
+            size > 0,
+            "Thread pool must have a non-zero number of workers!"
+        );
         // Create mpsc channel
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
