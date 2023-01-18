@@ -14,7 +14,7 @@ const IP_ADDR: &str = "0.0.0.0";
 const PORT_TCP: u16 = 80;
 const NUM_WORKERS: usize = 10;
 
-/// Entry point function for Protohackers problem 00.
+/// Entry point function for Protohackers problem 001.
 pub fn main() {
     println!(
         "Protohackers // Problem {} - \"{}\"",
